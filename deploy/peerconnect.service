@@ -1,0 +1,33 @@
+# PeerConnect Signaling Server Systemd Service Unit
+# Alternative to PM2 for process management
+# Install: sudo cp peerconnect.service /etc/systemd/system/
+# Enable:  sudo systemctl enable peerconnect
+# Start:   sudo systemctl start peerconnect
+# Logs:    sudo journalctl -u peerconnect -f
+
+[Unit]
+Description=PeerConnect Signaling Server
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/peerconnect/signaling-server
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=peerconnect
+
+# Resource limits (prevent DoS)
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

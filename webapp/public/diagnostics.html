@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PeerConnect — Diagnostics</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0f1e;
+      color: #f1f5f9;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: #e94560;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .section {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #e94560;
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .check:last-child {
+      border-bottom: none;
+    }
+
+    .check-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-right: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .check-icon.ok {
+      background: #10b981;
+      color: white;
+    }
+
+    .check-icon.error {
+      background: #ef4444;
+      color: white;
+    }
+
+    .check-icon.warn {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .check-label {
+      flex: 1;
+    }
+
+    .check-label strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .check-value {
+      font-size: 12px;
+      color: #94a3b8;
+      font-family: monospace;
+      word-break: break-all;
+    }
+
+    .button {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .button:hover {
+      background: #d63450;
+    }
+
+    .code-block {
+      background: #0a0f1e;
+      border: 1px solid #1e293b;
+      border-radius: 4px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 12px;
+      margin-top: 10px;
+      overflow-x: auto;
+      color: #94a3b8;
+    }
+
+    .info-box {
+      background: #1f2937;
+      border-left: 3px solid #e94560;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 PeerConnect Diagnostics</h1>
+    <p class="subtitle">Check what's working on this device</p>
+
+    <div class="section">
+      <div class="section-title">Browser Capabilities</div>
+      <div id="checks"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Connection Test</div>
+      <p style="margin-bottom: 15px; font-size: 14px;">Test if you can reach the signaling server:</p>
+      <button class="button" onclick="testSignalingConnection()">Test Signaling Server</button>
+      <div id="connection-test" style="margin-top: 15px;"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Media Permissions Test</div>
+      <p style="margin-bottom: 15px; font-size: 14px;">Request camera and microphone access:</p>
+      <button class="button" onclick="testMediaAccess()">Request Media Access</button>
+      <div id="media-test" style="margin-top: 15px;"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Raw Information</div>
+      <div style="font-size: 12px;">
+        <div class="check">
+          <strong>User Agent:</strong>
+          <div class="check-value" id="ua"></div>
+        </div>
+        <div class="check">
+          <strong>Current URL:</strong>
+          <div class="check-value" id="url"></div>
+        </div>
+        <div class="check">
+          <strong>Hostname:</strong>
+          <div class="check-value" id="hostname"></div>
+        </div>
+        <div class="check">
+          <strong>Port:</strong>
+          <div class="check-value" id="port"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="button" onclick="location.href = '/';" style="width: 100%; margin-top: 20px;">← Back to App</button>
+  </div>
+
+  <script>
+    // Perform all checks on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      performChecks();
+      displayRawInfo();
+    });
+
+    function createCheck(name, passed, detail = '') {
+      const check = document.createElement('div');
+      check.className = 'check';
+      const icon = document.createElement('div');
+      icon.className = `check-icon ${passed ? 'ok' : 'error'}`;
+      icon.textContent = passed ? '✓' : '✗';
+      const label = document.createElement('div');
+      label.className = 'check-label';
+      label.innerHTML = `<strong>${name}</strong>`;
+      if (detail) {
+        const value = document.createElement('div');
+        value.className = 'check-value';
+        value.textContent = detail;
+        label.appendChild(value);
+      }
+      check.appendChild(icon);
+      check.appendChild(label);
+      return check;
+    }
+
+    function performChecks() {
+      const checksDiv = document.getElementById('checks');
+      checksDiv.innerHTML = '';
+
+      // WebRTC Support
+      const hasWebRTC = !!(
+        (window.RTCPeerConnection || window.webkitRTCPeerConnection) &&
+        (window.RTCSessionDescription || window.webkitRTCSessionDescription) &&
+        (window.RTCIceCandidate || window.webkitRTCIceCandidate)
+      );
+      checksDiv.appendChild(createCheck('WebRTC Support', hasWebRTC, hasWebRTC ? 'Available' : 'Not available'));
+
+      // Media Devices
+      const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+      checksDiv.appendChild(createCheck('navigator.mediaDevices.getUserMedia', hasMediaDevices, hasMediaDevices ? 'Available' : 'Not available'));
+
+      // WebSocket
+      const hasWebSocket = !!window.WebSocket;
+      checksDiv.appendChild(createCheck('WebSocket', hasWebSocket, hasWebSocket ? 'Available' : 'Not available'));
+
+      // HTTPS/Secure Context
+      const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+      checksDiv.appendChild(createCheck('Secure Context (HTTPS or localhost)', isSecure, isSecure ? 'Yes' : 'No (may restrict media access)'));
+
+      // LocalStorage
+      const hasLocalStorage = !!(window.localStorage);
+      checksDiv.appendChild(createCheck('localStorage', hasLocalStorage, hasLocalStorage ? 'Available' : 'Not available'));
+
+      // IndexedDB
+      const hasIndexedDB = !!(window.indexedDB);
+      checksDiv.appendChild(createCheck('IndexedDB', hasIndexedDB, hasIndexedDB ? 'Available' : 'Not available'));
+
+      // Online Status
+      checksDiv.appendChild(createCheck('Network Status', navigator.onLine, navigator.onLine ? 'Online' : 'Offline'));
+    }
+
+    function displayRawInfo() {
+      document.getElementById('ua').textContent = navigator.userAgent;
+      document.getElementById('url').textContent = window.location.href;
+      document.getElementById('hostname').textContent = window.location.hostname;
+      document.getElementById('port').textContent = window.location.port || '(default for protocol)';
+    }
+
+    async function testSignalingConnection() {
+      const testDiv = document.getElementById('connection-test');
+      testDiv.innerHTML = '<p style="color: #94a3b8;">Testing...</p>';
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'localhost:8080'
+        : window.location.host;
+      const signalingUrl = protocol + '//' + host + '/signal';
+
+      try {
+        const ws = new WebSocket(signalingUrl);
+        let resolved = false;
+
+        const timeout = setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            ws.close();
+            testDiv.innerHTML = `
+              <div style="color: #ef4444;">
+                ✗ Connection timeout (10s)<br>
+                <span style="font-size: 12px; color: #94a3b8;">
+                  Server unreachable at: <code>${signalingUrl}</code><br>
+                  Make sure the signaling server is running: <code>node signaling-server/server.js</code>
+                </span>
+              </div>
+            `;
+          }
+        }, 10000);
+
+        ws.onopen = () => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            ws.close();
+            testDiv.innerHTML = `
+              <div style="color: #10b981;">
+                ✓ Connection successful!<br>
+                <span style="font-size: 12px; color: #94a3b8;">
+                  Connected to: <code>${signalingUrl}</code>
+                </span>
+              </div>
+            `;
+          }
+        };
+
+        ws.onerror = (err) => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            testDiv.innerHTML = `
+              <div style="color: #ef4444;">
+                ✗ Connection error<br>
+                <span style="font-size: 12px; color: #94a3b8;">
+                  URL: <code>${signalingUrl}</code><br>
+                  Error: Cannot establish WebSocket connection<br>
+                  Check: Is the server running? Is the address correct?
+                </span>
+              </div>
+            `;
+          }
+        };
+
+        ws.onclose = () => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+          }
+        };
+      } catch (err) {
+        testDiv.innerHTML = `
+          <div style="color: #ef4444;">
+            ✗ Error: ${err.message}<br>
+            <span style="font-size: 12px; color: #94a3b8;">
+              URL: <code>${signalingUrl}</code>
+            </span>
+          </div>
+        `;
+      }
+    }
+
+    async function testMediaAccess() {
+      const testDiv = document.getElementById('media-test');
+      testDiv.innerHTML = '<p style="color: #94a3b8;">Requesting permissions...</p>';
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        testDiv.innerHTML = `
+          <div style="color: #ef4444;">
+            ✗ getUserMedia not available<br>
+            <span style="font-size: 12px; color: #94a3b8;">
+              Your browser doesn't support camera/microphone access.
+            </span>
+          </div>
+        `;
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+
+        // Stop the stream
+        stream.getTracks().forEach(track => track.stop());
+
+        testDiv.innerHTML = `
+          <div style="color: #10b981;">
+            ✓ Media access granted!<br>
+            <span style="font-size: 12px; color: #94a3b8;">
+              Camera and microphone are accessible.
+            </span>
+          </div>
+        `;
+      } catch (err) {
+        let errorMsg = err.name || err.message;
+        let suggestion = '';
+
+        if (err.name === 'NotAllowedError') {
+          suggestion = 'Check browser settings: Site Settings → Camera/Microphone → Allow';
+        } else if (err.name === 'NotFoundError') {
+          suggestion = 'No camera/microphone found. Connect a device and try again.';
+        } else if (err.name === 'NotReadableError') {
+          suggestion = 'Camera/microphone in use by another app. Close it and try again.';
+        } else if (err.message.includes('getUserMedia not supported')) {
+          suggestion = 'Your browser doesn\'t support camera/microphone access.';
+        }
+
+        testDiv.innerHTML = `
+          <div style="color: #ef4444;">
+            ✗ ${errorMsg}<br>
+            <span style="font-size: 12px; color: #94a3b8;">
+              ${suggestion}
+            </span>
+          </div>
+        `;
+      }
+    }
+  </script>
+</body>
+</html>

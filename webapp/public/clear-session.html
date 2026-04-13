@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Clear Session</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h1 { margin: 0 0 20px; color: #333; }
+    p { color: #666; margin-bottom: 20px; }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #764ba2; }
+    .status { margin-top: 20px; font-size: 14px; color: #999; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔄 Clear Session</h1>
+    <p>This will clear the saved call session and return you to a fresh start.</p>
+    <button onclick="clearAndRedirect()">Clear & Start Fresh</button>
+    <button onclick="goBack()" style="background: #999; margin-left: 10px;">Cancel</button>
+    <div class="status" id="status"></div>
+  </div>
+  <script>
+    function clearAndRedirect() {
+      localStorage.removeItem('peerconnect_session');
+      sessionStorage.removeItem('peerconnect_tab_id');
+      document.getElementById('status').textContent = '✅ Cleared! Redirecting...';
+      setTimeout(() => {
+        window.location.href = '/index.html';
+      }, 500);
+    }
+    function goBack() {
+      window.location.href = '/index.html';
+    }
+  </script>
+</body>
+</html>

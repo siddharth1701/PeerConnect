@@ -1,0 +1,54 @@
+# Render.com Deployment Configuration
+# This file enables 1-click deployment to Render.com
+# Usage: Click "Deploy" button on Render with this repo
+
+services:
+  - type: web
+    name: peerconnect-signaling
+    runtime: node
+    plan: free
+
+    # Build configuration
+    buildCommand: cd signaling-server && npm install --production
+    startCommand: npm start
+
+    # Environment
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: LOG_LEVEL
+        value: info
+
+    # Health check
+    healthCheckPath: /
+    healthCheckInterval: 30
+
+    # Autoscaling (paid plans)
+    numInstances: 1
+
+    # Timeouts
+    buildTimeout: 15
+    startTimeout: 60
+
+    # Regions (optional - choose based on your location)
+    # region: oregon (default) | ohio | frankfurt | singapore | sydney
+
+# Deployment hooks
+hooks:
+  - onDeploy: npm audit --audit-level=moderate || true
+
+# Notes for Render deployment:
+# 1. Connect your GitHub account to Render
+# 2. Paste this repo URL: https://github.com/YOUR_USERNAME/peerconnect
+# 3. Render will auto-detect this render.yaml
+# 4. Click "Deploy" and it will automatically:
+#    - Clone your repository
+#    - Install dependencies from signaling-server/
+#    - Start the Node.js server
+#    - Assign you a .onrender.com domain
+#    - Enable auto-deployment on every push to main
+#
+# Your app will be live at: https://peerconnect-signaling.onrender.com
+# (or with your custom domain)

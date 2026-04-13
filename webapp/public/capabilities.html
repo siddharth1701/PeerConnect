@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PeerConnect — Device Capabilities Check</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0a0f1e 0%, #1a1a2e 100%);
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 28px;
+      background: linear-gradient(135deg, #fff 0%, #e94560 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: rgba(31, 41, 55, 0.8);
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card h2 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      color: #e94560;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: auto;
+    }
+
+    .status-enabled {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border: 1px solid #10b981;
+    }
+
+    .status-disabled {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid #ef4444;
+    }
+
+    .status-warning {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+      border: 1px solid #f59e0b;
+    }
+
+    .status-pending {
+      background: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+      border: 1px solid #3b82f6;
+    }
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+    }
+
+    .item:last-child {
+      border-bottom: none;
+    }
+
+    .item-label {
+      font-size: 13px;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    .item-value {
+      font-size: 13px;
+      color: #94a3b8;
+      text-align: right;
+      font-family: 'Courier New', monospace;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .feature-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 8px;
+      border-left: 3px solid #1e293b;
+    }
+
+    .feature-row.enabled {
+      border-left-color: #10b981;
+    }
+
+    .feature-row.disabled {
+      border-left-color: #ef4444;
+    }
+
+    .feature-row.warning {
+      border-left-color: #f59e0b;
+    }
+
+    .feature-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #e0e7ff;
+    }
+
+    .feature-details {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #e94560 0%, #ff6b81 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 10px 10px 10px 0;
+    }
+
+    .button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .button-secondary {
+      background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+    }
+
+    .button-secondary:hover {
+      box-shadow: 0 0 20px rgba(100, 100, 100, 0.3);
+    }
+
+    .summary {
+      background: rgba(31, 41, 55, 0.8);
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      margin-top: 30px;
+    }
+
+    .summary h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #e94560;
+    }
+
+    .warning-item {
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border-left: 3px solid;
+      font-size: 13px;
+    }
+
+    .warning-item.critical {
+      background: rgba(239, 68, 68, 0.1);
+      border-left-color: #ef4444;
+      color: #fca5a5;
+    }
+
+    .warning-item.high {
+      background: rgba(245, 158, 11, 0.1);
+      border-left-color: #f59e0b;
+      color: #fcd34d;
+    }
+
+    .warning-item.warning {
+      background: rgba(59, 130, 246, 0.1);
+      border-left-color: #3b82f6;
+      color: #93c5fd;
+    }
+
+    .warning-item.info {
+      background: rgba(6, 182, 212, 0.1);
+      border-left-color: #06b6d4;
+      color: #a5f3fc;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      font-size: 18px;
+      color: #94a3b8;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(233, 69, 96, 0.2);
+      border-top-color: #e94560;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .ready-badge {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border: 1px solid #10b981;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .not-ready-badge {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid #ef4444;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+
+    .timestamp {
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .card, .summary {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 PeerConnect Device Capabilities</h1>
+    <p class="subtitle">Real-time browser device and API capability detection</p>
+
+    <div class="controls">
+      <button class="button" onclick="runFullCheck()">🔄 Run Full Check</button>
+      <button class="button button-secondary" onclick="requestPermissions()">🔐 Request Permissions</button>
+      <button class="button button-secondary" onclick="goHome()">← Back to App</button>
+    </div>
+
+    <div id="content" class="loading">
+      <div class="spinner"></div>
+      Detecting capabilities...
+    </div>
+
+    <div class="timestamp">
+      <div id="timestamp"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { CapabilitiesDetector } from './lib/capabilities.js';
+
+    const detector = new CapabilitiesDetector();
+
+    // Initial check on page load
+    async function initCheck() {
+      try {
+        await detector.detectAll();
+        displayResults();
+      } catch (err) {
+        console.error('[Check] Error:', err);
+        document.getElementById('content').innerHTML = `
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #fca5a5; padding: 16px; border-radius: 8px; text-align: center;">
+            <strong>❌ Detection Error</strong><br>
+            ${err.message}
+          </div>
+        `;
+      }
+    }
+
+    // Run full check (exported for button)
+    window.runFullCheck = async function() {
+      document.getElementById('content').innerHTML = `<div class="loading"><div class="spinner"></div>Detecting capabilities...</div>`;
+      try {
+        await detector.detectAll();
+        displayResults();
+      } catch (err) {
+        console.error('[Check] Error:', err);
+      }
+    };
+
+    // Request permissions (exported for button)
+    window.requestPermissions = async function() {
+      const button = event.target;
+      button.disabled = true;
+      button.textContent = '⏳ Requesting...';
+
+      try {
+        const granted = await detector.requestMediaPermission();
+        if (granted) {
+          alert('✅ Permission granted! Capabilities updated.');
+          await runFullCheck();
+        } else {
+          alert('❌ Permission denied. You can enable it in browser settings.');
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = '🔐 Request Permissions';
+      }
+    };
+
+    // Go home (exported for button)
+    window.goHome = function() {
+      window.location.href = '/';
+    };
+
+    function displayResults() {
+      const report = detector.getReport();
+      const serverCaps = window.serverCapabilities;
+
+      let html = `
+        <div class="grid">
+          <!-- Hardware Section -->
+          <div class="card">
+            <h2>
+              📹 Hardware Devices
+              <span class="status-badge ${report.hardware.camera.available ? 'status-enabled' : 'status-disabled'}">
+                ${report.hardware.camera.available ? 'READY' : 'NOT FOUND'}
+              </span>
+            </h2>
+            <div class="item">
+              <span class="item-label">Cameras</span>
+              <span class="item-value">${report.hardware.camera.count} found</span>
+            </div>
+            <div class="item">
+              <span class="item-label">Microphones</span>
+              <span class="item-value">${report.hardware.microphone.count} found</span>
+            </div>
+            <div class="item">
+              <span class="item-label">Speakers</span>
+              <span class="item-value">${report.hardware.speaker.count} found</span>
+            </div>
+      `;
+
+      // Add device details if available
+      if (report.hardware.camera.devices.length > 0) {
+        html += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(30, 41, 59, 0.5);"><div style="font-size: 12px; color: #94a3b8; margin-bottom: 5px;">📷 Cameras:</div>`;
+        report.hardware.camera.devices.forEach(dev => {
+          html += `<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 4px;">• ${dev.label || 'Camera ' + dev.deviceId.slice(0, 8)}</div>`;
+        });
+        html += `</div>`;
+      }
+
+      if (report.hardware.microphone.devices.length > 0) {
+        html += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(30, 41, 59, 0.5);"><div style="font-size: 12px; color: #94a3b8; margin-bottom: 5px;">🎙️ Microphones:</div>`;
+        report.hardware.microphone.devices.forEach(dev => {
+          html += `<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 4px;">• ${dev.label || 'Microphone ' + dev.deviceId.slice(0, 8)}</div>`;
+        });
+        html += `</div>`;
+      }
+
+      html += `</div>
+
+          <!-- APIs Section -->
+          <div class="card">
+            <h2>
+              ⚙️ Browser APIs
+              <span class="status-badge ${report.apis.webrtc.available ? 'status-enabled' : 'status-disabled'}">
+                ${report.apis.webrtc.available && report.apis.websocket.available ? 'READY' : 'ISSUES'}
+              </span>
+            </h2>
+      `;
+
+      Object.entries(report.apis).forEach(([key, api]) => {
+        const statusClass = api.available ? 'enabled' : 'disabled';
+        const mandatory = api.mandatory ? '🔴 Mandatory' : '🟡 Optional';
+        html += `
+          <div class="feature-row ${statusClass}">
+            <div>
+              <div class="feature-name">${key.replace(/_/g, ' ').toUpperCase()}</div>
+              <div class="feature-details">${mandatory}</div>
+            </div>
+            <span class="status-badge status-${statusClass}">${api.available ? 'ENABLED' : 'DISABLED'}</span>
+          </div>
+        `;
+      });
+
+      html += `</div>
+
+          <!-- Permissions Section -->
+          <div class="card">
+            <h2>
+              🔐 Permissions
+              <span class="status-badge ${
+                report.permissions.camera.status === 'granted' &&
+                report.permissions.microphone.status === 'granted'
+                ? 'status-enabled' : 'status-warning'
+              }">
+                ${report.permissions.camera.status === 'granted' ? 'GRANTED' : 'CHECK'}
+              </span>
+            </h2>
+      `;
+
+      Object.entries(report.permissions).forEach(([key, perm]) => {
+        const statusMap = {
+          'granted': { class: 'enabled', text: '✅ GRANTED' },
+          'denied': { class: 'disabled', text: '❌ DENIED' },
+          'prompt': { class: 'warning', text: '⏳ WILL ASK' }
+        };
+        const status = statusMap[perm.status] || { class: 'warning', text: '❓ UNKNOWN' };
+        const mandatory = perm.mandatory ? '🔴' : '🟡';
+
+        html += `
+          <div class="feature-row ${status.class}">
+            <div>
+              <div class="feature-name">${mandatory} ${key.toUpperCase()}</div>
+              <div class="feature-details">${perm.mandatory ? 'Required' : 'Optional'}</div>
+            </div>
+            <span class="status-badge status-${status.class}">${status.text}</span>
+          </div>
+        `;
+      });
+
+      html += `</div>
+        </div>
+      `;
+
+      // Summary section
+      html += `
+        <div class="summary">
+          <h2>📊 Summary</h2>
+          <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            ${report.summary.all_mandatory_available ?
+              '<div class="ready-badge">✅ All Hardware Available</div>' :
+              '<div class="not-ready-badge">⚠️ Missing Hardware</div>'
+            }
+            ${report.summary.ready_for_calling ?
+              '<div class="ready-badge">✅ Ready for Calling</div>' :
+              '<div class="not-ready-badge">❌ Not Ready for Calling</div>'
+            }
+          </div>
+      `;
+
+      if (report.summary.warnings.length > 0) {
+        html += `<h3 style="color: #e94560; margin-bottom: 10px; font-size: 14px;">⚠️ Issues & Warnings</h3>`;
+        report.summary.warnings.forEach(warning => {
+          const levelMap = {
+            'critical': 'critical',
+            'high': 'high',
+            'warning': 'warning',
+            'info': 'info'
+          };
+          html += `<div class="warning-item ${levelMap[warning.level]}">${warning.message}</div>`;
+        });
+      } else {
+        html += `<div style="padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; color: #10b981; border-left: 3px solid #10b981;">✅ No issues detected!</div>`;
+      }
+
+      html += `
+        </div>
+      `;
+
+      document.getElementById('content').innerHTML = html;
+      document.getElementById('timestamp').innerHTML = `Last checked: ${new Date(report.timestamp).toLocaleString()}`;
+    }
+
+    // Run initial check
+    initCheck();
+  </script>
+</body>
+</html>
